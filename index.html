@@ -1,58 +1,437 @@
 <!DOCTYPE html>
-<html>
+<html lang="hu">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
-  <base href="/LockedL/">
-
-  <meta charset="UTF-8">
-  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!--
-    Uncomment the tag below to lay the app out underneath the parts of the
-    screen that the device obstructs, such as a display cutout, the rounded
-    corners of the screen, or a home indicator.
-
-    Without it, the browser keeps the app clear of them, and `SafeArea` and
-    `MediaQuery.paddingOf` report no padding. With it, the app covers the whole
-    screen, and it is up to the app to keep its own content out of the way,
-    which is what `SafeArea` is for.
-  -->
-  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> -->
-
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="app">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>app</title>
-  <link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LoveLock" />
+  <title>💞 LoveLock</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+    body {
+      margin: 0; padding: 0; background: #0d0a18; color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: #18122b; border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .room-badge {
+      background: rgba(255,77,141,0.2); border: 1px solid rgba(255,77,141,0.5);
+      color: #ff85b3; padding: 5px 10px; border-radius: 14px; font-weight: 700; font-size: 14px; cursor: pointer;
+    }
+    .status-dot { font-size: 12px; color: #4ade80; }
+    .canvas-wrap {
+      flex: 1; display: flex; align-items: center; justify-content: center; padding: 8px; overflow: hidden;
+    }
+    .stage {
+      position: relative; width: 320px; height: 568px; max-height: 100%; aspect-ratio: 9/16;
+      border-radius: 24px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      background: radial-gradient(circle at 25% 20%, #3b1d5e 0%, #17122b 55%, #090714 100%);
+    }
+    canvas { width: 100%; height: 100%; touch-action: none; display: block; }
+    .toolbar {
+      background: #1b1530; padding: 10px 12px 18px; border-top-left-radius: 20px; border-top-right-radius: 20px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 6px; overflow-x: auto; }
+    .chip, .btn {
+      background: #2a2147; color: #fff; border: 1px solid rgba(255,255,255,0.15);
+      padding: 6px 11px; border-radius: 12px; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer;
+    }
+    .chip.active { border-color: #ff4d8d; background: rgba(255,77,141,0.28); }
+    .color-dot {
+      width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; flex-shrink: 0; cursor: pointer;
+    }
+    .color-dot.active { border-color: #fff; transform: scale(1.12); }
+    .send-btn {
+      background: linear-gradient(135deg, #ff4d8d, #ff2a55); border: none; color: #fff;
+      padding: 9px 14px; border-radius: 14px; font-weight: 700; font-size: 13px; cursor: pointer; flex-shrink: 0;
+    }
+    .toast {
+      position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,42,85,0.95); color: #fff; padding: 8px 16px; border-radius: 20px;
+      font-size: 13px; font-weight: 600; display: none; z-index: 99;
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="toast" class="toast">💞 Elküldve a párod zárolt képernyőjére!</div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
-  <script src="flutter_bootstrap.js" async></script>
+  <header>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-weight:800;font-size:16px;">💞 LoveLock</span>
+      <span id="roomBtn" class="room-badge">#842915</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="statusText" class="status-dot">⏳ Csatlakozás...</span>
+      <label class="chip" style="margin:0;">
+        📷 Fotó
+        <input type="file" id="photoInput" accept="image/*" style="display:none" />
+      </label>
+    </div>
+  </header>
+
+  <div class="canvas-wrap">
+    <div class="stage">
+      <canvas id="canvas" width="320" height="568"></canvas>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="row" id="stickerRow">
+      <button class="chip" onclick="addSticker('💖')">💖</button>
+      <button class="chip" onclick="addSticker('🥺')">🥺</button>
+      <button class="chip" onclick="addSticker('💋')">💋</button>
+      <button class="chip" onclick="addSticker('🧸')">🧸</button>
+      <button class="chip" onclick="addSticker('🌹')">🌹</button>
+      <button class="chip" onclick="addSticker('✨')">✨</button>
+      <button class="chip" onclick="addSticker('Szeretlek! 💕')">Szeretlek! 💕</button>
+      <button class="chip" onclick="addSticker('Hiányzol! 🥺')">Hiányzol! 🥺</button>
+    </div>
+
+    <div class="row">
+      <div style="display:flex;gap:6px;">
+        <button class="chip active" id="mode_neon" onclick="setMode('neon')">✨ Neon</button>
+        <button class="chip" id="mode_smooth" onclick="setMode('smooth')">🖌️ Ecset</button>
+        <button class="chip" id="mode_hearts" onclick="setMode('hearts')">💖 Szív</button>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="chip" onclick="undoItem()">↩️</button>
+        <button class="chip" onclick="clearAll()">🗑️</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div style="display:flex;gap:8px;align-items:center;" id="paletteRow"></div>
+      <button class="send-btn" onclick="sendToLockScreen()">📲 Zárolt képernyőre</button>
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = "AIzaSyChozQSFt_ViJgd1HuzfyAraGuEX81_k6c";
+    const DB_URL = "https://lockedl-default-rtdb.europe-west1.firebasedatabase.app";
+
+    let roomCode = localStorage.getItem("lovelock_room") || "842915";
+    let idToken = null;
+    let myUid = "iphone_" + Math.floor(Math.random() * 999999);
+
+    let strokes = [];
+    let stickers = [];
+    let backgroundBase64 = null;
+    let bgImg = null;
+    let photoDim = 0.3;
+
+    let currentMode = "neon";
+    let currentColorHex = "#ff4d8d";
+    let currentColorInt = 0xFFFF4D8D;
+    let activeStroke = null;
+    let draggingSticker = null;
+    let lastUpdatedAt = 0;
+
+    const palette = [
+      { hex: "#ff4d8d", intVal: 0xFFFF4D8D },
+      { hex: "#ff2a55", intVal: 0xFFFF2A55 },
+      { hex: "#ffb703", intVal: 0xFFFFB703 },
+      { hex: "#a855f7", intVal: 0xFFA855F7 },
+      { hex: "#38bdf8", intVal: 0xFF38BDF8 },
+      { hex: "#4ade80", intVal: 0xFF4ADE80 },
+      { hex: "#ffffff", intVal: 0xFFFFFFFF }
+    ];
+
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    document.getElementById("roomBtn").textContent = "#" + roomCode;
+
+    const palRow = document.getElementById("paletteRow");
+    palette.forEach((p, idx) => {
+      const btn = document.createElement("div");
+      btn.className = "color-dot" + (idx === 0 ? " active" : "");
+      btn.style.background = p.hex;
+      btn.onclick = () => {
+        currentColorHex = p.hex;
+        currentColorInt = p.intVal;
+        document.querySelectorAll(".color-dot").forEach(d => d.classList.remove("active"));
+        btn.classList.add("active");
+      };
+      palRow.appendChild(btn);
+    });
+
+    function intToHex(c) {
+      return "#" + ((c >>> 0) & 0xFFFFFF).toString(16).padStart(6, "0");
+    }
+
+    function setMode(m) {
+      currentMode = m;
+      ["neon", "smooth", "hearts"].forEach(k => {
+        document.getElementById("mode_" + k).classList.toggle("active", k === m);
+      });
+    }
+
+    document.getElementById("roomBtn").onclick = () => {
+      const next = prompt("Add meg a 6 jegyű közös szobakódot:", roomCode);
+      if (next && next.trim()) {
+        roomCode = next.replace(/[^0-9]/g, "") || "842915";
+        localStorage.setItem("lovelock_room", roomCode);
+        document.getElementById("roomBtn").textContent = "#" + roomCode;
+        lastUpdatedAt = 0;
+        pollRoom();
+      }
+    };
+
+    document.getElementById("photoInput").onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const off = document.createElement("canvas");
+          off.width = 540; off.height = 960;
+          off.getContext("2d").drawImage(img, 0, 0, 540, 960);
+          const dataUrl = off.toDataURL("image/jpeg", 0.72);
+          backgroundBase64 = dataUrl.split(",")[1];
+          bgImg = img;
+          render();
+          pushCanvasState();
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+
+    function addSticker(text) {
+      stickers.push({
+        id: "st_" + Date.now(),
+        text,
+        x: 90 + Math.random() * 100,
+        y: 160 + Math.random() * 180,
+        isPill: text.length > 3
+      });
+      render();
+      pushCanvasState();
+    }
+
+    function undoItem() {
+      if (strokes.length > 0) strokes.pop();
+      else if (stickers.length > 0) stickers.pop();
+      render();
+      pushCanvasState();
+    }
+
+    function clearAll() {
+      strokes = [];
+      stickers = [];
+      render();
+      pushCanvasState();
+    }
+
+    function render() {
+      const grad = ctx.createRadialGradient(80, 90, 20, 160, 280, 380);
+      grad.addColorStop(0, "#3b1d5e");
+      grad.addColorStop(0.55, "#17122b");
+      grad.addColorStop(1, "#090714");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (bgImg) {
+        ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = `rgba(0,0,0,${photoDim})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      strokes.forEach(s => {
+        const pts = s.points || [];
+        if (!pts.length) return;
+        const col = typeof s.color === "number" ? intToHex(s.color) : (s.color || "#ff4d8d");
+
+        if (s.mode === "hearts") {
+          ctx.save();
+          ctx.font = `${(s.size || 6) * 3}px sans-serif`;
+          for (let i = 0; i < pts.length; i += 4) {
+            ctx.fillText("💖", pts[i].x - 8, pts[i].y + 8);
+          }
+          ctx.restore();
+          return;
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) {
+          const mx = (pts[i - 1].x + pts[i].x) / 2;
+          const my = (pts[i - 1].y + pts[i].y) / 2;
+          ctx.quadraticCurveTo(pts[i - 1].x, pts[i - 1].y, mx, my);
+        }
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = s.size || 6;
+        ctx.strokeStyle = col;
+        if (s.mode === "neon") {
+          ctx.shadowColor = col;
+          ctx.shadowBlur = 14;
+        }
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      stickers.forEach(st => {
+        ctx.save();
+        if (st.isPill) {
+          ctx.font = "bold 15px sans-serif";
+          const w = ctx.measureText(st.text).width + 26;
+          ctx.fillStyle = "rgba(255,42,85,0.9)";
+          ctx.beginPath();
+          ctx.roundRect(st.x, st.y, w, 32, 16);
+          ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.fillText(st.text, st.x + 13, st.y + 21);
+        } else {
+          ctx.font = "34px sans-serif";
+          ctx.fillText(st.text, st.x, st.y + 30);
+        }
+        ctx.restore();
+      });
+    }
+
+    function getPt(e) {
+      const r = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return {
+        x: (t.clientX - r.left) * (canvas.width / r.width),
+        y: (t.clientY - r.top) * (canvas.height / r.height)
+      };
+    }
+
+    function startPtr(e) {
+      e.preventDefault();
+      const pt = getPt(e);
+      for (let i = stickers.length - 1; i >= 0; i--) {
+        const st = stickers[i];
+        if (pt.x >= st.x - 10 && pt.x <= st.x + 110 && pt.y >= st.y - 10 && pt.y <= st.y + 42) {
+          draggingSticker = st;
+          return;
+        }
+      }
+      activeStroke = {
+        id: "stroke_" + Date.now(),
+        authorId: myUid,
+        color: currentColorInt,
+        size: 6.0,
+        mode: currentMode,
+        points: [pt]
+      };
+      strokes.push(activeStroke);
+      render();
+    }
+
+    function movePtr(e) {
+      if (!activeStroke && !draggingSticker) return;
+      e.preventDefault();
+      const pt = getPt(e);
+      if (draggingSticker) {
+        draggingSticker.x = pt.x - 20;
+        draggingSticker.y = pt.y - 15;
+      } else if (activeStroke) {
+        activeStroke.points.push(pt);
+      }
+      render();
+    }
+
+    function endPtr() {
+      if (activeStroke || draggingSticker) {
+        activeStroke = null;
+        draggingSticker = null;
+        pushCanvasState();
+      }
+    }
+
+    canvas.addEventListener("mousedown", startPtr);
+    canvas.addEventListener("mousemove", movePtr);
+    window.addEventListener("mouseup", endPtr);
+    canvas.addEventListener("touchstart", startPtr, { passive: false });
+    canvas.addEventListener("touchmove", movePtr, { passive: false });
+    window.addEventListener("touchend", endPtr);
+
+    async function authenticate() {
+      try {
+        const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ returnSecureToken: true })
+        });
+        const data = await res.json();
+        idToken = data.idToken;
+        myUid = data.localId || myUid;
+        document.getElementById("statusText").textContent = "🟢 Élő kapcsolat";
+        pollRoom();
+        setInterval(pollRoom, 1200);
+      } catch (err) {
+        document.getElementById("statusText").textContent = "🔴 Hiba";
+      }
+    }
+
+    async function pushCanvasState() {
+      if (!idToken) return;
+      lastUpdatedAt = Date.now();
+      const payload = {
+        roomCode,
+        strokes,
+        stickers,
+        backgroundBase64,
+        photoDim,
+        updatedAt: lastUpdatedAt
+      };
+      await fetch(`${DB_URL}/rooms/${roomCode}/canvas.json?auth=${idToken}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    async function pollRoom() {
+      if (!idToken || activeStroke || draggingSticker) return;
+      try {
+        const res = await fetch(`${DB_URL}/rooms/${roomCode}/canvas.json?auth=${idToken}`);
+        const data = await res.json();
+        if (data && (!data.updatedAt || data.updatedAt !== lastUpdatedAt)) {
+          lastUpdatedAt = data.updatedAt || Date.now();
+          strokes = data.strokes || [];
+          stickers = data.stickers || [];
+          photoDim = data.photoDim ?? 0.3;
+          if (data.backgroundBase64 && data.backgroundBase64 !== backgroundBase64) {
+            backgroundBase64 = data.backgroundBase64;
+            const img = new Image();
+            img.onload = () => { bgImg = img; render(); };
+            img.src = "data:image/jpeg;base64," + backgroundBase64;
+          }
+          render();
+        }
+      } catch (_) {}
+    }
+
+    async function sendToLockScreen() {
+      await pushCanvasState();
+      if (!idToken) return;
+      const pngBase64 = canvas.toDataURL("image/png").split(",")[1];
+      await fetch(`${DB_URL}/rooms/${roomCode}/latestLockScreen.json?auth=${idToken}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          senderId: myUid,
+          pngBase64,
+          timestamp: Date.now()
+        })
+      });
+      const toast = document.getElementById("toast");
+      toast.style.display = "block";
+      setTimeout(() => { toast.style.display = "none"; }, 3000);
+    }
+
+    render();
+    authenticate();
+  </script>
 </body>
 </html>
