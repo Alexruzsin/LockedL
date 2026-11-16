@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "1031313204593",
+    "firebase_url": "https://lockedl-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "lockedl",
+    "storage_bucket": "lockedl.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1031313204593:android:3b7d496f8271709ab782d0",
+        "android_client_info": {
+          "package_name": "com.lovelock.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChozQSFt_ViJgd1HuzfyAraGuEX81_k6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
