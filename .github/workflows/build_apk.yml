@@ -1,36 +1,41 @@
-name: Build LoveLock Android APK
+name: Build LoveLock Android APK & iPhone Web App
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
-  build-apk:
+  build-all:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: Generate Android platform files and preserve custom code
+      - name: Generate Android & Web platform files and preserve custom code
         run: |
           cp -r lib /tmp/lib_backup
           cp pubspec.yaml /tmp/pubspec_backup.yaml
           cp android/app/src/main/kotlin/com/lovelock/app/MainActivity.kt /tmp/MainActivity.kt
           cp android/app/google-services.json /tmp/google-services.json
 
-          flutter create . --project-name app --org com.lovelock --platforms android
+          flutter create . --project-name app --org com.lovelock --platforms android,web
 
           rm -rf lib
           cp -r /tmp/lib_backup lib
@@ -39,17 +44,27 @@ jobs:
           cp /tmp/MainActivity.kt android/app/src/main/kotlin/com/lovelock/app/MainActivity.kt
           cp /tmp/google-services.json android/app/google-services.json
 
-          # Add SET_WALLPAPER and INTERNET permissions to AndroidManifest.xml
           sed -i 's/<application/<uses-permission android:name="android.permission.SET_WALLPAPER"\/><uses-permission android:name="android.permission.INTERNET"\/><application/' android/app/src/main/AndroidManifest.xml
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build Release APK
+      - name: Build Android Release APK
         run: flutter build apk --release
 
-      - name: Upload APK artifact
+      - name: Upload Android APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: lovelock-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Build iPhone Web App (PWA)
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          flutter build web --release --base-href "/${REPO_NAME}/"
+
+      - name: Deploy iPhone Web App to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
